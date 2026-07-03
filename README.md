@@ -1,28 +1,44 @@
 # Z-Offset Tool — Bambu Lab A1
 
-Ferramenta para aplicar z-offset personalizado em arquivos `.gcode.3mf` para impressoras 3D Bambu Lab A1.
+Ferramenta para aplicar z-offset personalizado em arquivos `.gcode.3mf` para múltiplas impressoras Bambu Lab A1.
 
-## Problema
+## O problema
 
-Cada impressora Bambu Lab A1 tem um valor ideal de z-offset, mas o Bambu Lab Studio não permite editar esse valor por impressora — ele fica fixo no arquivo fatiado (`.gcode.3mf`). Quando você fatia um arquivo, não sabe em qual impressora ele vai rodar.
+Quando se trabalha com várias impressoras Bambu Lab A1, cada uma acaba tendo um valor ideal de z-offset — aquela microajuste na distância entre a ponta da extrusora e a mesa de impressão que faz a primeira camada sair perfeita. O problema é que a Bambu Lab **não permite editar esse valor por impressora**. O z-offset fica fixo dentro do arquivo fatiado (`.gcode.3mf`), e quando você fatia um projeto, não sabe exatamente em qual impressora ele vai rodar.
 
-## Solução
+O resultado? Você acaba tendo que **fatiar o mesmo arquivo N vezes** — uma para cada impressora — só para ajustar esse valor. Trabalho duplicado, ineficiente e propício a erros.
 
-Esta ferramenta modifica o z-offset diretamente no G-code dentro do arquivo `.3mf`, gerando uma cópia para cada impressora com o valor correto.
+## A solução
+
+Esta ferramenta resolve isso de forma simples: você fatia o arquivo **uma única vez** com um z-offset genérico, joga na pasta `to_process/`, e o script gera automaticamente **uma cópia para cada impressora** já com o z-offset correto aplicado.
 
 ```
 to_process/
-├── patolino.gcode.3mf
+├── patolino.gcode.3mf          ← arquivo fatiado uma vez
 
-         ↓ Processa para 5 impressoras ↓
+         ↓ Processa para todas as impressoras ↓
 
 ready/
-├── patolino_A1-Sala.3mf       (z-offset: -0.02mm)
-├── patolino_A1-Quarto.3mf     (z-offset: +0.01mm)
-├── patolino_A1-Escritorio.3mf (z-offset: -0.03mm)
-├── patolino_A1-Garagem.3mf    (z-offset: +0.00mm)
-└── patolino_A1-Oficina.3mf    (z-offset: -0.01mm)
+├── patolino_A1-Sala.3mf        ← z-offset: -0.02mm
+├── patolino_A1-Quarto.3mf      ← z-offset: +0.01mm
+├── patolino_A1-Escritorio.3mf  ← z-offset: -0.03mm
+├── patolino_A1-Garagem.3mf     ← z-offset: +0.00mm
+└── patolino_A1-Oficina.3mf     ← z-offset: -0.01mm
 ```
+
+O que antes era um processo manual chato e repetitivo agora é **um único comando**.
+
+## Como funciona por baixo dos panos
+
+O arquivo `.gcode.3mf` é na verdade um arquivo ZIP contendo o G-code fatiado. Dentro dele, o z-offset está definido no comando `G29.1 Z{valor}`. O script:
+
+1. Abre o arquivo `.3mf` como um ZIP
+2. Localiza o comando `G29.1 Z` no G-code de cada placa
+3. Substitui pelo z-offset da impressora correspondente
+4. Recalcula o checksum MD5 (obrigatório para o arquivo ser válido)
+5. Gera um novo arquivo `.3mf` para cada impressora
+
+Tudo isso sem dependências externas — apenas Python padrão.
 
 ## Requisitos
 
@@ -62,6 +78,8 @@ Edite o arquivo `printers.json` com suas impressoras e z-offsets ideais:
 | `name` | Nome da impressora (usado no nome do arquivo de saída) |
 | `z_offset` | Valor de z-offset em mm (negativo = mais perto da mesa) |
 
+> **Dica:** O valor de `z_offset` pode ser positivo ou negativo. Use valores pequenos (décimos de milímetro). Se não sabe o valor ideal da sua impressora, faça um teste com uma folha de papel ajustando o valor até a primeira camada sair uniforme.
+
 ## Uso
 
 ### Modo lote (recomendado)
@@ -84,13 +102,6 @@ O menu permite:
 1. Selecionar uma impressora específica ou todas
 2. Informar o caminho de um arquivo ou pasta
 
-## Como funciona
-
-1. O arquivo `.gcode.3mf` é um arquivo ZIP contendo o G-code fatiado
-2. O z-offset está no comando `G29.1 Z{valor}` dentro do G-code
-3. O script substitui esse valor e recalcula o checksum MD5
-4. Gera um novo arquivo `.3mf` para cada impressora
-
 ## Estrutura do projeto
 
 ```
@@ -106,9 +117,9 @@ zoffset_bambulab_levieiras/
 ## Notas
 
 - Arquivos já processados (com `_` no nome da impressora) são ignorados em execuções futuras
-- Um backup do original não é criado — os arquivos de saída são cópias
 - O script funciona com arquivos de placa única e múltiplas placas
 - O checksum MD5 é recalculado automaticamente para validade do arquivo
+- Os arquivos de saída são cópias — o original não é modificado
 
 ## Licença
 
