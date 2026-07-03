@@ -237,7 +237,7 @@ def batch_mode(folder_path):
     printers = load_printers()
 
     # Pasta de saida
-    output_dir = folder / "saida_zoffset"
+    output_dir = folder / "ready"
     output_dir.mkdir(exist_ok=True)
 
     total_files = len(input_files)
@@ -346,7 +346,7 @@ def interactive_mode():
             print(f"\n  Nenhum arquivo .3mf novo encontrado em '{path}'.")
             sys.exit(1)
 
-        output_dir = path / "saida_zoffset"
+        output_dir = path / "ready"
         output_dir.mkdir(exist_ok=True)
 
         print(f"\n  {len(input_files)} arquivo(s) encontrado(s). Processando...\n")

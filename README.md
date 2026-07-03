@@ -11,12 +11,12 @@ Cada impressora Bambu Lab A1 tem um valor ideal de z-offset, mas o Bambu Lab Stu
 Esta ferramenta modifica o z-offset diretamente no G-code dentro do arquivo `.3mf`, gerando uma cópia para cada impressora com o valor correto.
 
 ```
-entrada/
+to_process/
 ├── patolino.gcode.3mf
 
          ↓ Processa para 5 impressoras ↓
 
-saida/
+ready/
 ├── patolino_A1-Sala.3mf       (z-offset: -0.02mm)
 ├── patolino_A1-Quarto.3mf     (z-offset: +0.01mm)
 ├── patolino_A1-Escritorio.3mf (z-offset: -0.03mm)
@@ -32,8 +32,8 @@ saida/
 ## Instalação
 
 ```bash
-git clone https://github.com/SEU-USER/zoffset-bambulab.git
-cd zoffset-bambulab
+git clone https://github.com/levieiras/zoffset_bambulab_levieiras.git
+cd zoffset_bambulab_levieiras
 ```
 
 ## Configuração
@@ -66,13 +66,13 @@ Edite o arquivo `printers.json` com suas impressoras e z-offsets ideais:
 
 ### Modo lote (recomendado)
 
-Coloque seus arquivos `.gcode.3mf` numa pasta e execute:
+Coloque seus arquivos `.gcode.3mf` na pasta `to_process/` e execute:
 
 ```bash
-python zoffset_tool.py "caminho/da/pasta"
+python zoffset_tool.py to_process
 ```
 
-Os arquivos gerados ficam numa subpasta `saida_zoffset/` dentro da pasta informada.
+Os arquivos gerados ficam na pasta `ready/`.
 
 ### Modo interativo
 
@@ -94,8 +94,10 @@ O menu permite:
 ## Estrutura do projeto
 
 ```
-zoffset-bambulab/
-├── printers.json        # Configuração das impressoras
+zoffset_bambulab_levieiras/
+├── to_process/          # Coloque seus .3mf aqui
+├── ready/               # Arquivos gerados (nao versionados)
+├── printers.json        # Configuracao das impressoras
 ├── zoffset_tool.py      # Script principal
 ├── README.md            # Este arquivo
 └── .gitignore
