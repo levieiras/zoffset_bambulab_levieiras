@@ -54,20 +54,26 @@ cd zoffset_bambulab_levieiras
 
 ## Configuração
 
-Edite o arquivo `printers.json` com suas impressoras e z-offsets ideais:
+Copie o arquivo de exemplo e edite com suas impressoras:
+
+```bash
+cp printers.example.json printers.json
+```
+
+Edite `printers.json` com seus z-offsets ideais:
 
 ```json
 {
     "imp1": {
-        "name": "A1 - Sala",
+        "name": "A1-01",
         "z_offset": -0.02
     },
     "imp2": {
-        "name": "A1 - Quarto",
+        "name": "A1-02",
         "z_offset": 0.01
     },
     "imp3": {
-        "name": "A1 - Escritorio",
+        "name": "A1-03",
         "z_offset": -0.03
     }
 }
@@ -106,11 +112,12 @@ O menu permite:
 
 ```
 zoffset_bambulab_levieiras/
-├── to_process/          # Coloque seus .3mf aqui
-├── ready/               # Arquivos gerados (nao versionados)
-├── printers.json        # Configuracao das impressoras
-├── zoffset_tool.py      # Script principal
-├── README.md            # Este arquivo
+├── to_process/                  # Coloque seus .3mf aqui
+├── ready/                       # Arquivos gerados (nao versionados)
+├── printers.example.json        # Template de configuracao
+├── printers.json                # Sua configuracao (nao versionado)
+├── zoffset_tool.py              # Script principal
+├── README.md                    # Este arquivo
 └── .gitignore
 ```
 

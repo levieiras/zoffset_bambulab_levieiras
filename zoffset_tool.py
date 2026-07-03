@@ -30,14 +30,17 @@ CONFIG_FILE = SCRIPT_DIR / "printers.json"
 
 def load_printers():
     """Carrega configuracao de impressoras do JSON."""
+    example_file = SCRIPT_DIR / "printers.example.json"
+
     if not CONFIG_FILE.exists():
-        print(f"\n  Erro: {CONFIG_FILE.name} nao encontrado.")
-        print("  Crie o arquivo printers.json com as impressoras e z-offsets.")
-        print("  Exemplo:")
-        print('    {')
-        print('      "imp1": {"name": "A1 Sala",  "z_offset": -0.02},')
-        print('      "imp2": {"name": "A1 Quarto","z_offset":  0.01}')
-        print('    }')
+        if example_file.exists():
+            print(f"\n  Arquivo printers.json nao encontrado.")
+            print(f"  Copie o exemplo para criar sua configuracao:\n")
+            print(f"    cp printers.example.json printers.json\n")
+            print(f"  Depois edite printers.json com seus z-offsets reais.")
+        else:
+            print(f"\n  Erro: {CONFIG_FILE.name} nao encontrado.")
+            print("  Crie o arquivo printers.json com as impressoras e z-offsets.")
         sys.exit(1)
 
     with open(CONFIG_FILE, "r", encoding="utf-8") as f:
