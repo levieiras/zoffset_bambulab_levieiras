@@ -5,15 +5,15 @@
     },
     "imp2": {
         "name": "A1-02",
-        "z_offset": 0.06
+        "z_offset": -0.06
     },
     "imp3": {
         "name": "A1-03",
-        "z_offset": 0.10
+        "z_offset": 0.4
     },
     "imp4": {
         "name": "A1-04",
-        "z_offset": 0.06
+        "z_offset": -0.06
     },
     "imp5": {
         "name": "A1-05",

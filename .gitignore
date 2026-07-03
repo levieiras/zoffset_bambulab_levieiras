@@ -1,8 +1,9 @@
 # Config real (cada usuario deve criar a partir do exemplo)
 printers.json
 
-# Saida
+# Saidas e processados
 ready/
+processed/
 
 # Arquivos 3mf (arquivos do usuario, nao devem ir pro repo)
 *.3mf

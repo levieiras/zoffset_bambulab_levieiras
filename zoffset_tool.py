@@ -239,9 +239,11 @@ def batch_mode(folder_path):
 
     printers = load_printers()
 
-    # Pasta de saida
+    # Pastas de saida e processados
     output_dir = folder / "ready"
+    processed_dir = folder / "processed"
     output_dir.mkdir(exist_ok=True)
+    processed_dir.mkdir(exist_ok=True)
 
     total_files = len(input_files)
     total_printers = len(printers)
@@ -251,11 +253,12 @@ def batch_mode(folder_path):
     print("=" * 62)
     print("  Z-OFFSET TOOL — MODO LOTE")
     print("=" * 62)
-    print(f"  Pasta entrada:  {folder}")
-    print(f"  Arquivos:       {total_files}")
-    print(f"  Impressoras:    {total_printers}")
-    print(f"  Pasta saida:    {output_dir}")
-    print(f"  Total esperado: {total_expected} arquivos")
+    print(f"  Pasta entrada:   {folder}")
+    print(f"  Arquivos:        {total_files}")
+    print(f"  Impressoras:     {total_printers}")
+    print(f"  Pasta saida:     {output_dir}")
+    print(f"  Pasta originais: {processed_dir}")
+    print(f"  Total esperado:  {total_expected} arquivos")
     print("=" * 62)
     print()
 
@@ -267,6 +270,9 @@ def batch_mode(folder_path):
 
         results = process_file(file_path, printers, output_dir)
 
+        # Verificar se todos foram com sucesso
+        all_success = all(success for _, success, _ in results)
+
         for name, success, detail in results:
             if success:
                 print(f"    OK   {name}  ({detail})")
@@ -274,6 +280,12 @@ def batch_mode(folder_path):
             else:
                 print(f"    FALHA {name}  ({detail})")
                 total_fail += 1
+
+        # Mover original para processed/ se todos com sucesso
+        if all_success:
+            dest = processed_dir / file_path.name
+            shutil.move(str(file_path), str(dest))
+            print(f"    MOVido → processed/{file_path.name}")
 
         print()
 
@@ -285,6 +297,7 @@ def batch_mode(folder_path):
     if total_fail > 0:
         print(f"  Falha:    {total_fail} arquivos")
     print(f"  Saida:    {output_dir}")
+    print(f"  Originais movidos para: {processed_dir}")
     print("=" * 62)
     print()
 
@@ -350,30 +363,53 @@ def interactive_mode():
             sys.exit(1)
 
         output_dir = path / "ready"
+        processed_dir = path / "processed"
         output_dir.mkdir(exist_ok=True)
+        processed_dir.mkdir(exist_ok=True)
 
         print(f"\n  {len(input_files)} arquivo(s) encontrado(s). Processando...\n")
 
         for i, file_path in enumerate(input_files, 1):
             print(f"  [{i}/{len(input_files)}] {file_path.name}")
             results = process_file(file_path, selected_printers, output_dir)
+
+            all_success = all(success for _, success, _ in results)
+
             for name, success, detail in results:
                 tag = "OK" if success else "FALHA"
                 print(f"    {tag}  {name}  ({detail})")
+
+            if all_success:
+                dest = processed_dir / file_path.name
+                shutil.move(str(file_path), str(dest))
+                print(f"    MOVido → processed/{file_path.name}")
+
             print()
 
         print(f"  Arquivos de saida em: {output_dir}")
+        print(f"  Originais movidos para: {processed_dir}")
 
     elif path.exists() and path.suffix.lower() == ".3mf":
         # Arquivo unico
         output_dir = path.parent
+        processed_dir = output_dir / "processed"
+        processed_dir.mkdir(exist_ok=True)
+
         print(f"\n  Processando: {path.name}\n")
 
         results = process_file(path, selected_printers, output_dir)
 
+        all_success = all(success for _, success, _ in results)
+
         for name, success, detail in results:
             tag = "OK" if success else "FALHA"
             print(f"  {tag}  {name}  ({detail})")
+
+        if all_success:
+            dest = processed_dir / path.name
+            shutil.move(str(path), str(dest))
+            print(f"\n  Movido → processed/{path.name}")
+
         print()
 
     else:

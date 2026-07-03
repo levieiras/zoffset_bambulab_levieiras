@@ -10,11 +10,11 @@ O resultado? Você acaba tendo que **fatiar o mesmo arquivo N vezes** — uma pa
 
 ## A solução
 
-Esta ferramenta resolve isso de forma simples: você fatia o arquivo **uma única vez** com um z-offset genérico, joga na pasta `to_process/`, e o script gera automaticamente **uma cópia para cada impressora** já com o z-offset correto aplicado.
+Esta ferramenta resolve isso de forma simples: você fatia o arquivo **uma única vez** com um z-offset genérico, joga na pasta `to_process/`, e o script gera automaticamente **uma cópia para cada impressora** já com o z-offset correto aplicado. Após o processamento, o arquivo original é movido para `processed/`, evitando reprocessamento acidental.
 
 ```
 to_process/
-├── patolino.gcode.3mf          ← arquivo fatiado uma vez
+├── patolino.gcode.3mf          ← arquivo para processar
 
          ↓ Processa para todas as impressoras ↓
 
@@ -24,6 +24,9 @@ ready/
 ├── patolino_A1-Escritorio.3mf  ← z-offset: -0.03mm
 ├── patolino_A1-Garagem.3mf     ← z-offset: +0.00mm
 └── patolino_A1-Oficina.3mf     ← z-offset: -0.01mm
+
+processed/
+└── patolino.gcode.3mf          ← original movido aqui
 ```
 
 O que antes era um processo manual chato e repetitivo agora é **um único comando**.
@@ -96,7 +99,7 @@ Coloque seus arquivos `.gcode.3mf` na pasta `to_process/` e execute:
 python zoffset_tool.py to_process
 ```
 
-Os arquivos gerados ficam na pasta `ready/`.
+Os arquivos gerados ficam na pasta `ready/` e os originais são movidos para `processed/`.
 
 ### Modo interativo
 
@@ -114,6 +117,7 @@ O menu permite:
 zoffset_bambulab_levieiras/
 ├── to_process/                  # Coloque seus .3mf aqui
 ├── ready/                       # Arquivos gerados (nao versionados)
+├── processed/                   # Originais processados (nao versionados)
 ├── printers.example.json        # Template de configuracao
 ├── printers.json                # Sua configuracao (nao versionado)
 ├── zoffset_tool.py              # Script principal
