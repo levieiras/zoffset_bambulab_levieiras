@@ -285,7 +285,7 @@ def batch_mode(folder_path):
         if all_success:
             dest = processed_dir / file_path.name
             shutil.move(str(file_path), str(dest))
-            print(f"    MOVido → processed/{file_path.name}")
+            print(f"    MOVIDO -> processed/{file_path.name}")
 
         print()
 
@@ -380,9 +380,9 @@ def interactive_mode():
                 print(f"    {tag}  {name}  ({detail})")
 
             if all_success:
-                dest = processed_dir / file_path.name
+            dest = processed_dir / file_path.name
                 shutil.move(str(file_path), str(dest))
-                print(f"    MOVido → processed/{file_path.name}")
+                print(f"    MOVIDO -> processed/{file_path.name}")
 
             print()
 
@@ -408,7 +408,7 @@ def interactive_mode():
         if all_success:
             dest = processed_dir / path.name
             shutil.move(str(path), str(dest))
-            print(f"\n  Movido → processed/{path.name}")
+            print(f"\n  MOVIDO -> processed/{path.name}")
 
         print()
 
