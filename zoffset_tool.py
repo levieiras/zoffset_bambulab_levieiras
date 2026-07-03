@@ -380,7 +380,7 @@ def interactive_mode():
                 print(f"    {tag}  {name}  ({detail})")
 
             if all_success:
-            dest = processed_dir / file_path.name
+                dest = processed_dir / file_path.name
                 shutil.move(str(file_path), str(dest))
                 print(f"    MOVIDO -> processed/{file_path.name}")
 
@@ -421,12 +421,12 @@ def interactive_mode():
 #  MAIN
 # ════════════════════════════════════════════════════════════════════════
 
+TO_PROCESS = SCRIPT_DIR / "to_process"
+
+
 def main():
-    # Modo lote: passar pasta como argumento
-    if len(sys.argv) > 1 and os.path.isdir(sys.argv[1]):
-        batch_mode(sys.argv[1])
-    else:
-        interactive_mode()
+    TO_PROCESS.mkdir(exist_ok=True)
+    batch_mode(TO_PROCESS)
 
 
 if __name__ == "__main__":
