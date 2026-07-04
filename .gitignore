@@ -1,12 +1,13 @@
+# Arquivos 3mf do usuario
+to_process/
+uploads/
+outputs/
+
+# Banco SQLite local
+instance/
+
 # Config real (cada usuario deve criar a partir do exemplo)
 printers.json
-
-# Saidas e processados
-ready/
-processed/
-
-# Arquivos 3mf (arquivos do usuario, nao devem ir pro repo)
-*.3mf
 
 # Python
 __pycache__/

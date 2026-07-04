@@ -169,7 +169,8 @@ def process_file(input_path, printers, output_dir):
         z_offset = printer_info["z_offset"]
 
         suffix = sanitize_name(printer_name)
-        output_name = f"{input_path.stem}_{suffix}.3mf"
+        base_name = input_path.stem.removesuffix(".gcode")
+        output_name = f"{base_name}-{suffix}.3mf"
         output_path = output_dir / output_name
 
         try:

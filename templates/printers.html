@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Impressoras - Z-Offset Tool{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Gerenciar impressoras</h1>
+    <p>Adicione, edite ou remova impressoras e seus z-offsets.</p>
+</section>
+
+<div class="card animate-in animate-delay-1">
+    <h2 class="card-title">Adicionar impressora</h2>
+    <form action="{{ url_for('add_printer') }}" method="POST" id="add-form" class="form-add-printer">
+        <div class="form-add-fields">
+            <div class="form-group">
+                <label class="form-label" for="add-name">Nome</label>
+                <input type="text" id="add-name" name="name" class="form-input" placeholder="Ex: A1-01" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="add-offset">Z-Offset (mm)</label>
+                <input type="number" id="add-offset" name="z_offset" class="form-input" step="0.01" min="-1" max="1" placeholder="Ex: -0.06" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-add">Adicionar</button>
+        </div>
+        <span class="form-hint">Valores entre -0.5 e 0.5 sao comuns</span>
+        <div class="form-warning" id="add-warning" hidden>
+            &#9888; Valor fora do range comum. Confirma?
+        </div>
+    </form>
+</div>
+
+<div class="card animate-in animate-delay-2">
+    <h2 class="card-title">Impressoras cadastradas</h2>
+
+    {% if printers %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Z-Offset</th>
+                    <th>Acoes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in printers %}
+                <tr>
+                    <td>
+                        <span class="printer-name">{{ p.name }}</span>
+                    </td>
+                    <td>
+                        <span class="offset-badge">{{ "%+.2f"|format(p.z_offset) }}mm</span>
+                    </td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-ghost" onclick="toggleEdit({{ p.id }})">
+                            &#9998; Editar
+                        </button>
+                        <form action="{{ url_for('delete_printer', printer_id=p.id) }}" method="POST" class="inline-form"
+                              onsubmit="return confirm('Remover impressora {{ p.name }}?')">
+                            <button type="submit" class="btn btn-sm btn-danger">&#10005; Remover</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr id="edit-{{ p.id }}" class="edit-row" hidden>
+                    <td colspan="3">
+                        <form action="{{ url_for('edit_printer', printer_id=p.id) }}" method="POST" class="form-inline form-inline-row edit-form">
+                            <input type="text" name="name" value="{{ p.name }}" class="form-input form-input-sm" required>
+                            <input type="number" name="z_offset" value="{{ p.z_offset }}" step="0.01" min="-1" max="1" class="form-input form-input-sm offset-input" required>
+                            <button type="submit" class="btn btn-sm btn-primary">Salvar</button>
+                            <button type="button" class="btn btn-sm btn-ghost" onclick="toggleEdit({{ p.id }})">Cancelar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="table-footer">
+        <span>{{ printers|length }} impressora(s) cadastrada(s)</span>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#128421;</div>
+        <p>Nenhuma impressora cadastrada.</p>
+        <p class="empty-hint">Adicione sua primeira impressora usando o formulario acima.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleEdit(id) {
+        const row = document.getElementById('edit-' + id);
+        row.hidden = !row.hidden;
+    }
+
+    const OFFSET_MIN = -0.5;
+    const OFFSET_MAX = 0.5;
+
+    function validateOffset(value) {
+        const n = parseFloat(value);
+        if (isNaN(n)) return true;
+        return n >= OFFSET_MIN && n <= OFFSET_MAX;
+    }
+
+    const addForm = document.getElementById('add-form');
+    const addOffset = document.getElementById('add-offset');
+    const addWarning = document.getElementById('add-warning');
+
+    addOffset.addEventListener('input', () => {
+        if (addOffset.value && !validateOffset(addOffset.value)) {
+            addWarning.hidden = false;
+        } else {
+            addWarning.hidden = true;
+        }
+    });
+
+    addForm.addEventListener('submit', (e) => {
+        if (addOffset.value && !validateOffset(addOffset.value)) {
+            if (!confirm('Valor de z-offset fora do range comum (' + OFFSET_MIN + ' a ' + OFFSET_MAX + 'mm). Confirma?')) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    document.querySelectorAll('.edit-form').forEach(form => {
+        const input = form.querySelector('.offset-input');
+        form.addEventListener('submit', (e) => {
+            if (input.value && !validateOffset(input.value)) {
+                if (!confirm('Valor de z-offset fora do range comum (' + OFFSET_MIN + ' a ' + OFFSET_MAX + 'mm). Confirma?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

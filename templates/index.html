@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+
+{% block title %}Processar - Z-Offset Tool{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Processar arquivo</h1>
+    <p>Envie um ou mais arquivos <code>.gcode.3mf</code> e gere copias com o z-offset correto para cada impressora.</p>
+</section>
+
+<div class="card animate-in animate-delay-1">
+    <h2 class="card-title">Enviar arquivo</h2>
+    <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" id="upload-form">
+        <div class="dropzone" id="dropzone">
+            <input type="file" name="files" id="file-input" accept=".3mf" multiple hidden>
+            <div class="dropzone-content">
+                <div class="dropzone-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" fill="none">
+                        <rect x="8" y="6" width="40" height="44" rx="4" stroke="currentColor" stroke-width="2" fill="none" opacity="0.3"/>
+                        <path d="M8 14h40" stroke="currentColor" stroke-width="2" opacity="0.2"/>
+                        <path d="M22 28l4-4 4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M26 24v14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M16 38h24" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+                        <circle cx="14" cy="10" r="1.5" fill="currentColor" opacity="0.3"/>
+                        <circle cx="19" cy="10" r="1.5" fill="currentColor" opacity="0.3"/>
+                        <circle cx="24" cy="10" r="1.5" fill="currentColor" opacity="0.3"/>
+                    </svg>
+                </div>
+                <p class="dropzone-text">Arraste os arquivos <code>.3mf</code> aqui</p>
+                <p class="dropzone-hint">ou clique para selecionar (pode ser varios)</p>
+                <p class="dropzone-limit">Tamanho maximo: 500MB por arquivo</p>
+            </div>
+            <div class="dropzone-selected" id="dropzone-selected" hidden>
+                <div class="file-icon">&#128196;</div>
+                <div class="dropzone-file-info">
+                    <span id="file-count"></span>
+                    <span id="file-names"></span>
+                </div>
+                <button type="button" class="btn-remove" id="btn-remove">&times;</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <span class="printer-selector-label">Selecionar impressoras</span>
+            {% if printers %}
+            <div class="printer-select-all">
+                <label>
+                    <input type="checkbox" id="select-all">
+                    Todas as impressoras
+                </label>
+            </div>
+            <div class="printer-chips">
+                {% for p in printers %}
+                <label class="printer-chip" id="chip-{{ p.id }}">
+                    <input type="checkbox" name="printers" value="{{ p.id }}" class="printer-checkbox">
+                    <span class="printer-chip-name">{{ p.name }}</span>
+                    <span class="printer-chip-offset">{{ "%+.2f"|format(p.z_offset) }}mm</span>
+                </label>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="printer-empty">
+                <p>Nenhuma impressora cadastrada.</p>
+                <a href="{{ url_for('printers_page') }}" class="btn btn-sm">Adicionar impressoras</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="btn-upload" {% if not printers %}disabled{% endif %}>
+            Processar arquivo(s)
+        </button>
+    </form>
+</div>
+
+<div class="card animate-in animate-delay-2" id="progress-card" hidden>
+    <h2 class="card-title">Processando...</h2>
+    <div class="progress-container">
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="progress-info">
+            <span id="progress-text">0 / 0</span>
+            <span id="progress-percent">0%</span>
+        </div>
+        <p class="progress-detail" id="progress-detail">Preparando arquivos...</p>
+    </div>
+</div>
+
+<div class="card animate-in animate-delay-2" id="results-card" hidden>
+    <h2 class="card-title">Resultado</h2>
+
+    <div id="rejected-section" hidden>
+        <div class="result-section">
+            <h3 class="result-subtitle result-warn"><span id="rejected-count">0</span> arquivo(s) ignorado(s) (formato invalido)</h3>
+            <ul class="file-list" id="rejected-list"></ul>
+        </div>
+    </div>
+
+    <div id="successful-section" hidden>
+        <div class="result-section">
+            <h3 class="result-subtitle result-ok"><span id="successful-count">0</span> arquivo(s) gerado(s)</h3>
+            <ul class="file-list" id="successful-list"></ul>
+        </div>
+    </div>
+
+    <div id="failed-section" hidden>
+        <div class="result-section">
+            <h3 class="result-subtitle result-error"><span id="failed-count">0</span> arquivo(s) com falha</h3>
+            <ul class="file-list" id="failed-list"></ul>
+        </div>
+    </div>
+
+    <div id="result-actions" hidden>
+        <div class="result-actions">
+            <a href="#" class="btn btn-primary" id="download-all-btn">
+                &#8595; Baixar ZIP (<span id="download-count">0</span> arquivo<span id="download-plural">s</span>)
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-ghost">
+                Processar mais
+            </a>
+        </div>
+    </div>
+
+    <div id="result-original" hidden>
+        <div class="result-original">
+            <span>Originais: <span id="original-names"></span></span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const dropzoneSelected = document.getElementById('dropzone-selected');
+    const fileCount = document.getElementById('file-count');
+    const fileNames = document.getElementById('file-names');
+    const btnRemove = document.getElementById('btn-remove');
+    const selectAll = document.getElementById('select-all');
+    const checkboxes = document.querySelectorAll('.printer-checkbox');
+    const chips = document.querySelectorAll('.printer-chip');
+    const uploadForm = document.getElementById('upload-form');
+    const progressCard = document.getElementById('progress-card');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const progressPercent = document.getElementById('progress-percent');
+    const progressDetail = document.getElementById('progress-detail');
+    const resultsCard = document.getElementById('results-card');
+    const btnUpload = document.getElementById('btn-upload');
+
+    dropzone.addEventListener('click', (e) => {
+        if (e.target === btnRemove || e.target.closest('.btn-remove')) return;
+        fileInput.click();
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        const dtFiles = e.dataTransfer.files;
+        if (dtFiles.length > 0) {
+            const valid = Array.from(dtFiles).filter(f => f.name.toLowerCase().endsWith('.3mf'));
+            if (valid.length > 0) {
+                fileInput.files = dtFiles;
+                showFiles(valid);
+            }
+        }
+    });
+
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            showFiles(Array.from(fileInput.files));
+        }
+    });
+
+    function showFiles(files) {
+        const count = files.length;
+        fileCount.textContent = count + ' arquivo' + (count > 1 ? 's' : '') + ' selecionado' + (count > 1 ? 's' : '');
+        const names = files.slice(0, 3).map(f => f.name).join(', ');
+        const extra = count > 3 ? ' e mais ' + (count - 3) + '...' : '';
+        fileNames.textContent = names + extra;
+        dropzone.querySelector('.dropzone-content').hidden = true;
+        dropzoneSelected.hidden = false;
+        dropzone.classList.add('has-file');
+    }
+
+    btnRemove.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.value = '';
+        dropzone.querySelector('.dropzone-content').hidden = false;
+        dropzoneSelected.hidden = true;
+        dropzone.classList.remove('has-file');
+    });
+
+    function updateChipState(checkbox, chip) {
+        if (checkbox.checked) {
+            chip.classList.add('active');
+        } else {
+            chip.classList.remove('active');
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', () => {
+            checkboxes.forEach((cb, i) => {
+                cb.checked = selectAll.checked;
+                updateChipState(cb, chips[i]);
+            });
+        });
+
+        checkboxes.forEach((cb, i) => {
+            cb.addEventListener('change', () => {
+                selectAll.checked = [...checkboxes].every(c => c.checked);
+                updateChipState(cb, chips[i]);
+            });
+        });
+    }
+
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        btnUpload.disabled = true;
+        btnUpload.textContent = 'Enviando...';
+
+        const formData = new FormData(uploadForm);
+
+        try {
+            const response = await fetch('{{ url_for("upload") }}', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                alert(data.error);
+                btnUpload.disabled = false;
+                btnUpload.textContent = 'Processar arquivo(s)';
+                return;
+            }
+
+            const jobId = data.job_id;
+
+            progressCard.hidden = false;
+            resultsCard.hidden = true;
+
+            pollProgress(jobId);
+        } catch (err) {
+            alert('Erro ao enviar: ' + err.message);
+            btnUpload.disabled = false;
+            btnUpload.textContent = 'Processar arquivo(s)';
+        }
+    });
+
+    function pollProgress(jobId) {
+        const interval = setInterval(async () => {
+            try {
+                const resp = await fetch('/progress/' + jobId);
+                const data = await resp.json();
+
+                const percent = data.total > 0 ? Math.round((data.current / data.total) * 100) : 0;
+
+                progressBar.style.width = percent + '%';
+                progressText.textContent = data.current + ' / ' + data.total;
+                progressPercent.textContent = percent + '%';
+
+                if (data.current > 0 && data.current < data.total) {
+                    progressDetail.textContent = 'Processando arquivo ' + data.current + ' de ' + data.total + '...';
+                } else if (data.current === data.total && data.total > 0) {
+                    progressDetail.textContent = 'Finalizando...';
+                }
+
+                if (data.done) {
+                    clearInterval(interval);
+                    progressDetail.textContent = 'Concluido!';
+                    progressBar.classList.add('completed');
+                    playNotification();
+
+                    setTimeout(() => loadResults(jobId), 600);
+                }
+            } catch (err) {
+                console.error('Erro ao verificar progresso:', err);
+            }
+        }, 300);
+    }
+
+    function playNotification() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const notes = [523.25, 659.25, 783.99];
+            notes.forEach((freq, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.4);
+                osc.start(ctx.currentTime + i * 0.15);
+                osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+            });
+        } catch (e) {}
+    }
+
+    async function loadResults(jobId) {
+        try {
+            const resp = await fetch('/results/' + jobId);
+            const data = await resp.json();
+
+            progressCard.hidden = true;
+            resultsCard.hidden = false;
+
+            if (data.rejected && data.rejected.length > 0) {
+                document.getElementById('rejected-section').hidden = false;
+                document.getElementById('rejected-count').textContent = data.rejected.length;
+                const list = document.getElementById('rejected-list');
+                data.rejected.forEach(name => {
+                    list.innerHTML += '<li class="file-item file-error"><div class="file-info"><span class="file-name">' + name + '</span><span class="file-detail">Apenas .3mf e aceito</span></div></li>';
+                });
+            }
+
+            if (data.successful && data.successful.length > 0) {
+                document.getElementById('successful-section').hidden = false;
+                document.getElementById('successful-count').textContent = data.successful.length;
+                const list = document.getElementById('successful-list');
+                data.successful.forEach(([original, name, success, detail]) => {
+                    list.innerHTML += '<li class="file-item file-ok"><div class="file-info"><span class="file-name">' + name + '</span><span class="file-detail">' + detail + '</span></div><a href="/download/' + jobId + '/' + encodeURIComponent(name) + '" class="btn btn-sm">&#8595; Baixar</a></li>';
+                });
+            }
+
+            if (data.failed && data.failed.length > 0) {
+                document.getElementById('failed-section').hidden = false;
+                document.getElementById('failed-count').textContent = data.failed.length;
+                const list = document.getElementById('failed-list');
+                data.failed.forEach(([original, name, success, detail]) => {
+                    list.innerHTML += '<li class="file-item file-error"><div class="file-info"><span class="file-name">' + name + '</span><span class="file-detail">' + detail + '</span></div></li>';
+                });
+            }
+
+            if (data.successful && data.successful.length > 0) {
+                document.getElementById('result-actions').hidden = false;
+                document.getElementById('download-all-btn').href = '/download-all/' + jobId;
+                document.getElementById('download-count').textContent = data.successful.length;
+                document.getElementById('download-plural').textContent = data.successful.length > 1 ? 's' : '';
+            }
+
+            if (data.processed_names && data.processed_names.length > 0) {
+                document.getElementById('result-original').hidden = false;
+                document.getElementById('original-names').textContent = data.processed_names.join(', ');
+            }
+
+            btnUpload.disabled = false;
+            btnUpload.textContent = 'Processar arquivo(s)';
+        } catch (err) {
+            console.error('Erro ao carregar resultados:', err);
+        }
+    }
+</script>
+{% endblock %}
