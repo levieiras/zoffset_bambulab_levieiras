@@ -47,7 +47,7 @@ jobs = {}
 
 
 def cleanup_old_outputs():
-    """Remove pastas de output com mais de 15 minutos."""
+    """Remove pastas de output com mais de 5 minutos."""
     while True:
         time.sleep(300)
         now = time.time()
@@ -55,8 +55,14 @@ def cleanup_old_outputs():
             for job_dir in OUTPUTS_DIR.iterdir():
                 if job_dir.is_dir():
                     age = now - job_dir.stat().st_mtime
-                    if age > 900:
+                    if age > 300:
                         shutil.rmtree(job_dir, ignore_errors=True)
+        if UPLOADS_DIR.exists():
+            for f in UPLOADS_DIR.iterdir():
+                if f.is_file():
+                    age = now - f.stat().st_mtime
+                    if age > 300:
+                        f.unlink(missing_ok=True)
 
 
 def run_job(job_id, valid_files, rejected, selected_printers):
@@ -278,6 +284,15 @@ def download_all(job_id):
         return response
 
     return send_from_directory(str(job_dir), zip_path.name, as_attachment=True)
+
+
+@app.route("/cleanup/<job_id>", methods=["POST"])
+def cleanup_job(job_id):
+    job_dir = OUTPUTS_DIR / job_id
+    if job_dir.exists():
+        shutil.rmtree(job_dir, ignore_errors=True)
+    jobs.pop(job_id, None)
+    return jsonify({"ok": True})
 
 
 @app.route("/printers")

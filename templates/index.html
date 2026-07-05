@@ -140,6 +140,7 @@
 {% block scripts %}
 <script>
     const BASE = '{{ APP_ROOT }}';
+    let currentJobId = null;
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const dropzoneSelected = document.getElementById('dropzone-selected');
@@ -273,6 +274,7 @@
             }
 
             const jobId = data.job_id;
+            currentJobId = jobId;
 
             uploadCard.hidden = true;
             progressCard.hidden = false;
@@ -393,6 +395,11 @@
     }
 
     function resetForm() {
+        if (currentJobId) {
+            fetch(BASE + '/cleanup/' + currentJobId, { method: 'POST' }).catch(() => {});
+            currentJobId = null;
+        }
+
         fileInput.value = '';
         dropzone.querySelector('.dropzone-content').hidden = false;
         dropzoneSelected.hidden = true;
