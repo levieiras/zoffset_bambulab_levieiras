@@ -41,7 +41,7 @@ def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if APP_PASSWORD and not session.get("authenticated"):
-            return redirect(url_for("login"))
+            return redirect(APP_ROOT + url_for("login"))
         return f(*args, **kwargs)
     return decorated
 
@@ -150,11 +150,11 @@ def timestamp_filter(dt):
 @app.route("/auth", methods=["GET", "POST"])
 def login():
     if not APP_PASSWORD:
-        return redirect(url_for("index"))
+        return redirect(APP_ROOT + url_for("index"))
     if request.method == "POST":
         if request.form.get("password") == APP_PASSWORD:
             session["authenticated"] = True
-            return redirect(url_for("index"))
+            return redirect(APP_ROOT + url_for("index"))
         flash("Senha incorreta.", "error")
     return render_template("login.html")
 
@@ -162,7 +162,7 @@ def login():
 @app.route("/signout")
 def logout():
     session.clear()
-    return redirect(url_for("login"))
+    return redirect(APP_ROOT + url_for("login"))
 
 
 @app.route("/")
@@ -264,17 +264,17 @@ def results(job_id):
 def download(job_id, filename):
     if not filename:
         flash("Arquivo invalido.", "error")
-        return redirect(url_for("index"))
+        return redirect(APP_ROOT + url_for("index"))
 
     job_dir = OUTPUTS_DIR / job_id
     if not job_dir.exists():
         flash("Arquivo nao encontrado ou expirado.", "error")
-        return redirect(url_for("index"))
+        return redirect(APP_ROOT + url_for("index"))
 
     file_path = job_dir / filename
     if not file_path.exists():
         flash("Arquivo nao encontrado.", "error")
-        return redirect(url_for("index"))
+        return redirect(APP_ROOT + url_for("index"))
 
     @after_this_request
     def cleanup(response):
@@ -298,12 +298,12 @@ def download_all(job_id):
     job_dir = OUTPUTS_DIR / job_id
     if not job_dir.exists():
         flash("Arquivo nao encontrado ou expirado.", "error")
-        return redirect(url_for("index"))
+        return redirect(APP_ROOT + url_for("index"))
 
     files = list(job_dir.rglob("*.3mf"))
     if not files:
         flash("Nenhum arquivo processado encontrado.", "error")
-        return redirect(url_for("index"))
+        return redirect(APP_ROOT + url_for("index"))
 
     zip_path = job_dir / f"processed_{job_id}.zip"
     with zipfile.ZipFile(str(zip_path), "w", zipfile.ZIP_DEFLATED) as zf:
@@ -347,17 +347,17 @@ def add_printer():
 
     if not name:
         flash("Nome da impressora e obrigatorio.", "error")
-        return redirect(url_for("printers_page"))
+        return redirect(APP_ROOT + url_for("printers_page"))
 
     try:
         z_offset = float(z_offset_str)
     except (ValueError, TypeError):
         flash("Z-offset invalido. Use um numero como -0.06 ou 0.00.", "error")
-        return redirect(url_for("printers_page"))
+        return redirect(APP_ROOT + url_for("printers_page"))
 
     database.add_printer(name, z_offset)
     flash(f'Impressora "{name}" adicionada com sucesso.', "success")
-    return redirect(url_for("printers_page"))
+    return redirect(APP_ROOT + url_for("printers_page"))
 
 
 @app.route("/printers/edit/<int:printer_id>", methods=["POST"])
@@ -368,17 +368,17 @@ def edit_printer(printer_id):
 
     if not name:
         flash("Nome da impressora e obrigatorio.", "error")
-        return redirect(url_for("printers_page"))
+        return redirect(APP_ROOT + url_for("printers_page"))
 
     try:
         z_offset = float(z_offset_str)
     except (ValueError, TypeError):
         flash("Z-offset invalido. Use um numero como -0.06 ou 0.00.", "error")
-        return redirect(url_for("printers_page"))
+        return redirect(APP_ROOT + url_for("printers_page"))
 
     database.update_printer(printer_id, name, z_offset)
     flash(f'Impressora "{name}" atualizada com sucesso.', "success")
-    return redirect(url_for("printers_page"))
+    return redirect(APP_ROOT + url_for("printers_page"))
 
 
 @app.route("/printers/delete/<int:printer_id>", methods=["POST"])
@@ -386,7 +386,7 @@ def edit_printer(printer_id):
 def delete_printer(printer_id):
     database.delete_printer(printer_id)
     flash("Impressora removida.", "success")
-    return redirect(url_for("printers_page"))
+    return redirect(APP_ROOT + url_for("printers_page"))
 
 
 if __name__ == "__main__":
