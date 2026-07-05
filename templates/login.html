@@ -4,14 +4,297 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Z-Offset Tool</title>
-    <link rel="stylesheet" href="{{ APP_ROOT }}{{ url_for('static', filename='style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --mint: #6fbfa5;
+            --mint-light: #a8d8c8;
+            --mint-dark: #4a9e7a;
+            --cream: #f5ede3;
+            --cream-dark: #e8ddd0;
+            --charcoal: #2d2d2d;
+            --charcoal-light: #3d3d3d;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'DM Sans', system-ui, sans-serif;
+            background: var(--charcoal);
+            overflow: hidden;
+        }
+
+        /* ── Animated background ── */
+        .bg {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 80%, rgba(111, 191, 165, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 20%, rgba(168, 216, 200, 0.08) 0%, transparent 50%),
+                linear-gradient(160deg, #1a1a1a 0%, #2d2d2d 40%, #252525 100%);
+        }
+
+        .bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+            background-size: 200px;
+            opacity: 0.5;
+        }
+
+        /* ── Floating orb decoration ── */
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(111, 191, 165, 0.08);
+            top: -100px;
+            right: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(168, 216, 200, 0.06);
+            bottom: -80px;
+            left: -80px;
+            animation-delay: -7s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -20px) scale(1.05); }
+            66% { transform: translate(-20px, 15px) scale(0.95); }
+        }
+
+        /* ── Login card ── */
+        .login-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 400px;
+            padding: 1.5rem;
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 3rem 2.5rem 2.5rem;
+            text-align: center;
+            box-shadow:
+                0 0 0 1px rgba(111, 191, 165, 0.05),
+                0 20px 60px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        /* ── Logo ── */
+        .login-logo-wrap {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+
+        .login-logo-wrap::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--mint), var(--mint-dark));
+            opacity: 0.2;
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.15; transform: scale(1); }
+            50% { opacity: 0.25; transform: scale(1.05); }
+        }
+
+        .login-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── Typography ── */
+        .login-title {
+            font-family: 'Cormorant Garamond', Georgia, serif;
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--cream);
+            letter-spacing: -0.01em;
+            margin-bottom: 0.25rem;
+        }
+
+        .login-brand {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--mint);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 2rem;
+            opacity: 0.8;
+        }
+
+        /* ── Form ── */
+        .login-form { text-align: left; }
+
+        .input-wrap {
+            position: relative;
+            margin-bottom: 1.25rem;
+        }
+
+        .input-wrap::before {
+            content: '';
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b6560' stroke-width='2'%3E%3Crect x='3' y='11' width='18' height='11' rx='2' ry='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E");
+            background-size: contain;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .input-wrap:focus-within::before { opacity: 1; }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            color: var(--cream);
+            font-family: 'DM Sans', system-ui, sans-serif;
+            font-size: 0.95rem;
+            letter-spacing: 0.12em;
+            outline: none;
+            transition: all 0.25s ease;
+        }
+
+        .login-input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            letter-spacing: 0.08em;
+            font-weight: 400;
+        }
+
+        .login-input:focus {
+            border-color: rgba(111, 191, 165, 0.4);
+            background: rgba(255, 255, 255, 0.06);
+            box-shadow: 0 0 0 3px rgba(111, 191, 165, 0.08);
+        }
+
+        /* ── Button ── */
+        .btn-login {
+            width: 100%;
+            padding: 14px 24px;
+            background: linear-gradient(135deg, var(--mint), var(--mint-dark));
+            border: none;
+            border-radius: 12px;
+            color: var(--charcoal);
+            font-family: 'DM Sans', system-ui, sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px rgba(111, 191, 165, 0.25);
+        }
+
+        .btn-login:hover::before { opacity: 1; }
+
+        .btn-login:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(111, 191, 165, 0.15);
+        }
+
+        /* ── Error alert ── */
+        .alert {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 0.82rem;
+            margin-bottom: 1rem;
+            animation: shake 0.4s ease;
+        }
+
+        .alert-error {
+            background: rgba(196, 93, 74, 0.12);
+            border: 1px solid rgba(196, 93, 74, 0.2);
+            color: #e88070;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-3px); }
+            80% { transform: translateX(2px); }
+        }
+
+        /* ── Footer ── */
+        .login-footer {
+            margin-top: 2rem;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 0.05em;
+        }
+    </style>
 </head>
-<body class="login-body">
-    <div class="login-container">
+<body>
+    <div class="bg"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="login-wrapper">
         <div class="login-card">
-            <img src="{{ APP_ROOT }}{{ url_for('static', filename='pwa-192x192.png') }}" alt="Logo" class="login-logo">
+            <div class="login-logo-wrap">
+                <img src="{{ APP_ROOT }}{{ url_for('static', filename='pwa-192x192.png') }}" alt="Logo" class="login-logo">
+            </div>
             <h1 class="login-title">Z-Offset Tool</h1>
-            <p class="login-subtitle">Levieira's</p>
+            <p class="login-brand">Levieira's</p>
 
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -21,13 +304,14 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ APP_ROOT }}/auth">
-                <div class="form-group">
-                    <input type="password" name="password" class="form-input login-input" placeholder="Senha" required autofocus>
+            <form method="POST" action="{{ APP_ROOT }}/auth" class="login-form">
+                <div class="input-wrap">
+                    <input type="password" name="password" class="login-input" placeholder="Digite a senha" required autofocus>
                 </div>
-                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                <button type="submit" class="btn-login">Entrar</button>
             </form>
         </div>
+        <p class="login-footer">Acesso autorizado apenas</p>
     </div>
 </body>
 </html>
