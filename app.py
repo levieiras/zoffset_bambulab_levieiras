@@ -147,7 +147,7 @@ def timestamp_filter(dt):
     return dt.strftime("%d/%m/%Y %H:%M")
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/auth", methods=["GET", "POST"])
 def login():
     if not APP_PASSWORD:
         return redirect(url_for("index"))
@@ -159,7 +159,7 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/logout")
+@app.route("/signout")
 def logout():
     session.clear()
     return redirect(url_for("login"))
