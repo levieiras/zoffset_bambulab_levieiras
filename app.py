@@ -26,18 +26,12 @@ from zoffset_tool import process_file
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "zoffset-dev-key-change-in-production")
 
-
-class ScriptNameMiddleware:
-    def __init__(self, wsgi_app, script_name):
-        self.wsgi_app = wsgi_app
-        self.script_name = script_name
-
-    def __call__(self, environ, start_response):
-        environ["SCRIPT_NAME"] = self.script_name
-        return self.wsgi_app(environ, start_response)
+APP_ROOT = os.environ.get("APP_ROOT", "")
 
 
-app.wsgi_app = ScriptNameMiddleware(app.wsgi_app, "/zoffset")
+@app.context_processor
+def inject_app_root():
+    return {"APP_ROOT": APP_ROOT}
 
 BASE_DIR = Path(__file__).parent
 UPLOADS_DIR = BASE_DIR / "uploads"

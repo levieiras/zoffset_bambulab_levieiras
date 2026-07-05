@@ -10,7 +10,7 @@
 
 <div class="card animate-in animate-delay-1">
     <h2 class="card-title">Enviar arquivo</h2>
-    <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" id="upload-form">
+    <form action="{{ APP_ROOT }}{{ url_for('upload') }}" method="POST" enctype="multipart/form-data" id="upload-form">
         <div class="dropzone" id="dropzone">
             <input type="file" name="files" id="file-input" accept=".3mf" multiple hidden>
             <div class="dropzone-content">
@@ -61,7 +61,7 @@
             {% else %}
             <div class="printer-empty">
                 <p>Nenhuma impressora cadastrada.</p>
-                <a href="{{ url_for('printers_page') }}" class="btn btn-sm">Adicionar impressoras</a>
+                <a href="{{ APP_ROOT }}{{ url_for('printers_page') }}" class="btn btn-sm">Adicionar impressoras</a>
             </div>
             {% endif %}
         </div>
@@ -115,7 +115,7 @@
             <a href="#" class="btn btn-primary" id="download-all-btn">
                 &#8595; Baixar ZIP (<span id="download-count">0</span> arquivo<span id="download-plural">s</span>)
             </a>
-            <a href="{{ url_for('index') }}" class="btn btn-ghost">
+            <a href="{{ APP_ROOT }}{{ url_for('index') }}" class="btn btn-ghost">
                 Processar mais
             </a>
         </div>
@@ -131,6 +131,7 @@
 
 {% block scripts %}
 <script>
+    const BASE = '{{ APP_ROOT }}';
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const dropzoneSelected = document.getElementById('dropzone-selected');
@@ -233,7 +234,7 @@
         const formData = new FormData(uploadForm);
 
         try {
-            const response = await fetch('{{ url_for("upload") }}', {
+            const response = await fetch(BASE + '{{ url_for("upload") }}', {
                 method: 'POST',
                 body: formData,
             });
@@ -263,7 +264,7 @@
     function pollProgress(jobId) {
         const interval = setInterval(async () => {
             try {
-                const resp = await fetch('/progress/' + jobId);
+                const resp = await fetch(BASE + '/progress/' + jobId);
                 const data = await resp.json();
 
                 const percent = data.total > 0 ? Math.round((data.current / data.total) * 100) : 0;
@@ -313,7 +314,7 @@
 
     async function loadResults(jobId) {
         try {
-            const resp = await fetch('/results/' + jobId);
+            const resp = await fetch(BASE + '/results/' + jobId);
             const data = await resp.json();
 
             progressCard.hidden = true;
@@ -333,7 +334,7 @@
                 document.getElementById('successful-count').textContent = data.successful.length;
                 const list = document.getElementById('successful-list');
                 data.successful.forEach(([original, name, success, detail]) => {
-                    list.innerHTML += '<li class="file-item file-ok"><div class="file-info"><span class="file-name">' + name + '</span><span class="file-detail">' + detail + '</span></div><a href="/download/' + jobId + '/' + encodeURIComponent(name) + '" class="btn btn-sm">&#8595; Baixar</a></li>';
+                    list.innerHTML += '<li class="file-item file-ok"><div class="file-info"><span class="file-name">' + name + '</span><span class="file-detail">' + detail + '</span></div><a href="' + BASE + '/download/' + jobId + '/' + encodeURIComponent(name) + '" class="btn btn-sm">&#8595; Baixar</a></li>';
                 });
             }
 
@@ -348,7 +349,7 @@
 
             if (data.successful && data.successful.length > 0) {
                 document.getElementById('result-actions').hidden = false;
-                document.getElementById('download-all-btn').href = '/download-all/' + jobId;
+                document.getElementById('download-all-btn').href = BASE + '/download-all/' + jobId;
                 document.getElementById('download-count').textContent = data.successful.length;
                 document.getElementById('download-plural').textContent = data.successful.length > 1 ? 's' : '';
             }
