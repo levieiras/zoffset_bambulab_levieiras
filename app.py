@@ -16,8 +16,10 @@ from flask import (
     render_template,
     request,
     send_from_directory,
+    session,
     url_for,
 )
+from functools import wraps
 
 import database
 import zoffset_tool
@@ -27,11 +29,21 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "zoffset-dev-key-change-in-production")
 
 APP_ROOT = os.environ.get("APP_ROOT", "")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
 
 
 @app.context_processor
 def inject_app_root():
     return {"APP_ROOT": APP_ROOT}
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if APP_PASSWORD and not session.get("authenticated"):
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
 
 BASE_DIR = Path(__file__).parent
 UPLOADS_DIR = BASE_DIR / "uploads"
@@ -135,13 +147,33 @@ def timestamp_filter(dt):
     return dt.strftime("%d/%m/%Y %H:%M")
 
 
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if not APP_PASSWORD:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        if request.form.get("password") == APP_PASSWORD:
+            session["authenticated"] = True
+            return redirect(url_for("index"))
+        flash("Senha incorreta.", "error")
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+
 @app.route("/")
+@login_required
 def index():
     printers = database.get_printers()
     return render_template("index.html", printers=printers)
 
 
 @app.route("/upload", methods=["POST"])
+@login_required
 def upload():
     printers = database.get_printers()
     if not printers:
@@ -196,6 +228,7 @@ def upload():
 
 
 @app.route("/progress/<job_id>")
+@login_required
 def progress(job_id):
     job = jobs.get(job_id)
     if not job:
@@ -209,6 +242,7 @@ def progress(job_id):
 
 
 @app.route("/results/<job_id>")
+@login_required
 def results(job_id):
     job = jobs.get(job_id)
     if not job:
@@ -226,6 +260,7 @@ def results(job_id):
 
 
 @app.route("/download/<job_id>/<path:filename>")
+@login_required
 def download(job_id, filename):
     if not filename:
         flash("Arquivo invalido.", "error")
@@ -258,6 +293,7 @@ def download(job_id, filename):
 
 
 @app.route("/download-all/<job_id>")
+@login_required
 def download_all(job_id):
     job_dir = OUTPUTS_DIR / job_id
     if not job_dir.exists():
@@ -287,6 +323,7 @@ def download_all(job_id):
 
 
 @app.route("/cleanup/<job_id>", methods=["POST"])
+@login_required
 def cleanup_job(job_id):
     job_dir = OUTPUTS_DIR / job_id
     if job_dir.exists():
@@ -296,12 +333,14 @@ def cleanup_job(job_id):
 
 
 @app.route("/printers")
+@login_required
 def printers_page():
     printers = database.get_printers()
     return render_template("printers.html", printers=printers)
 
 
 @app.route("/printers/add", methods=["POST"])
+@login_required
 def add_printer():
     name = request.form.get("name", "").strip()
     z_offset_str = request.form.get("z_offset", "").strip()
@@ -322,6 +361,7 @@ def add_printer():
 
 
 @app.route("/printers/edit/<int:printer_id>", methods=["POST"])
+@login_required
 def edit_printer(printer_id):
     name = request.form.get("name", "").strip()
     z_offset_str = request.form.get("z_offset", "").strip()
@@ -342,6 +382,7 @@ def edit_printer(printer_id):
 
 
 @app.route("/printers/delete/<int:printer_id>", methods=["POST"])
+@login_required
 def delete_printer(printer_id):
     database.delete_printer(printer_id)
     flash("Impressora removida.", "success")

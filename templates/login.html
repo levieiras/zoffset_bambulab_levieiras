@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Z-Offset Tool</title>
+    <link rel="stylesheet" href="{{ APP_ROOT }}{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <img src="{{ APP_ROOT }}{{ url_for('static', filename='pwa-192x192.png') }}" alt="Logo" class="login-logo">
+            <h1 class="login-title">Z-Offset Tool</h1>
+            <p class="login-subtitle">Levieira's</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" action="{{ APP_ROOT }}/login">
+                <div class="form-group">
+                    <input type="password" name="password" class="form-input login-input" placeholder="Senha" required autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
