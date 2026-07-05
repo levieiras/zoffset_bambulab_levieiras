@@ -72,6 +72,14 @@
     </form>
 </div>
 
+<div class="card animate-in animate-delay-2" id="upload-card" hidden>
+    <h2 class="card-title">Enviando arquivo...</h2>
+    <div class="upload-loading">
+        <div class="spinner"></div>
+        <p class="upload-loading-text" id="upload-loading-text">Preparando upload...</p>
+    </div>
+</div>
+
 <div class="card animate-in animate-delay-2" id="progress-card" hidden>
     <h2 class="card-title">Processando...</h2>
     <div class="progress-container">
@@ -149,6 +157,9 @@
     const progressDetail = document.getElementById('progress-detail');
     const resultsCard = document.getElementById('results-card');
     const btnUpload = document.getElementById('btn-upload');
+
+    const uploadCard = document.getElementById('upload-card');
+    const uploadLoadingText = document.getElementById('upload-loading-text');
 
     dropzone.addEventListener('click', (e) => {
         if (e.target === btnRemove || e.target.closest('.btn-remove')) return;
@@ -231,18 +242,31 @@
         btnUpload.disabled = true;
         btnUpload.textContent = 'Enviando...';
 
+        uploadCard.hidden = false;
+        progressCard.hidden = true;
+        resultsCard.hidden = true;
+        uploadLoadingText.textContent = 'Enviando arquivo para o servidor...';
+
         const formData = new FormData(uploadForm);
+        const fileCount = (uploadForm.querySelector('input[type=file]').files || []).length;
+        const totalSize = Array.from(uploadForm.querySelector('input[type=file]').files || []).reduce((s, f) => s + f.size, 0);
+        const sizeMB = (totalSize / (1024 * 1024)).toFixed(1);
 
         try {
+            uploadLoadingText.textContent = 'Enviando ' + fileCount + ' arquivo(s) (' + sizeMB + 'MB)...';
+
             const response = await fetch(BASE + '{{ url_for("upload") }}', {
                 method: 'POST',
                 body: formData,
             });
 
+            uploadLoadingText.textContent = 'Servidor recebido, processando...';
+
             const data = await response.json();
 
             if (data.error) {
                 alert(data.error);
+                uploadCard.hidden = true;
                 btnUpload.disabled = false;
                 btnUpload.textContent = 'Processar arquivo(s)';
                 return;
@@ -250,12 +274,14 @@
 
             const jobId = data.job_id;
 
+            uploadCard.hidden = true;
             progressCard.hidden = false;
             resultsCard.hidden = true;
 
             pollProgress(jobId);
         } catch (err) {
             alert('Erro ao enviar: ' + err.message);
+            uploadCard.hidden = true;
             btnUpload.disabled = false;
             btnUpload.textContent = 'Processar arquivo(s)';
         }
