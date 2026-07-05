@@ -123,9 +123,9 @@
             <a href="#" class="btn btn-primary" id="download-all-btn">
                 &#8595; Baixar ZIP (<span id="download-count">0</span> arquivo<span id="download-plural">s</span>)
             </a>
-            <a href="{{ APP_ROOT }}{{ url_for('index') }}" class="btn btn-ghost">
-                Processar mais
-            </a>
+            <button type="button" class="btn btn-ghost" onclick="resetForm()">
+                Nova convers&atilde;o
+            </button>
         </div>
     </div>
 
@@ -390,6 +390,37 @@
         } catch (err) {
             console.error('Erro ao carregar resultados:', err);
         }
+    }
+
+    function resetForm() {
+        fileInput.value = '';
+        dropzone.querySelector('.dropzone-content').hidden = false;
+        dropzoneSelected.hidden = true;
+        dropzone.classList.remove('has-file');
+
+        uploadCard.hidden = true;
+        progressCard.hidden = true;
+        resultsCard.hidden = true;
+
+        progressBar.style.width = '0%';
+        progressBar.classList.remove('completed');
+        progressText.textContent = '0 / 0';
+        progressPercent.textContent = '0%';
+        progressDetail.textContent = 'Preparando arquivos...';
+
+        document.getElementById('rejected-section').hidden = true;
+        document.getElementById('rejected-list').innerHTML = '';
+        document.getElementById('successful-section').hidden = true;
+        document.getElementById('successful-list').innerHTML = '';
+        document.getElementById('failed-section').hidden = true;
+        document.getElementById('failed-list').innerHTML = '';
+        document.getElementById('result-actions').hidden = true;
+        document.getElementById('result-original').hidden = true;
+
+        btnUpload.disabled = false;
+        btnUpload.textContent = 'Processar arquivo(s)';
+
+        uploadForm.scrollIntoView({ behavior: 'smooth' });
     }
 </script>
 {% endblock %}
